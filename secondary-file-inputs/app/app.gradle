@@ -1,0 +1,31 @@
+plugins {
+    id("java")
+}
+
+def artifactType = Attribute.of("artifactType", String)
+
+configurations {
+    additionalInputs
+}
+
+dependencies {
+    implementation(project(":lib1"))
+    implementation(project(":lib2"))
+    additionalInputs("com.google.guava:guava:27.0.1-jre")
+
+    registerTransform(FileSizer) {
+        from.attribute(artifactType, "jar")
+        to.attribute(artifactType, "size")
+        configuration {
+            additionalInputs = configurations.additionalInputs
+        }
+    }
+}
+
+tasks.register("resolve", Copy) {
+    def artifacts = configurations.runtimeClasspath.incoming.artifactView {
+        attributes { attribute(artifactType, "size") }
+    }.artifacts
+    from(artifacts.artifactFiles)
+    into(project.layout.buildDirectory.dir("sizes"))
+}
