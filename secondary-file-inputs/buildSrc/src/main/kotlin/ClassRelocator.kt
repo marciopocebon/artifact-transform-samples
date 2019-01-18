@@ -44,9 +44,17 @@ abstract class ClassRelocatorAction : Callable<List<File>> {
         get() = dependencies.files
 
     override fun call(): List<File> {
+        return if (parameters.externalClasspath.contains(primaryInput)) {
+            listOf(primaryInput)
+        } else {
+            relocateJar()
+        }
+    }
+
+    private fun relocateJar(): List<File> {
         val baseName = primaryInput.name.substring(0, primaryInput.name.length - 4)
         val output = workspace.resolve("${baseName}-relocated.jar")
-        val relocatedPackages = (dependencies.files.flatMap { it.readPackages() } + primaryInput.readPackages()).toSet()
+        val relocatedPackages = (dependencyFiles.flatMap { it.readPackages() } + primaryInput.readPackages()).toSet()
         val nonRelocatedPackages = parameters.externalClasspath.flatMap { it.readPackages() }
         val relocations = (relocatedPackages - nonRelocatedPackages).map { packageName ->
             val toPackage = "relocated.$packageName"

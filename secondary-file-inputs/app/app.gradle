@@ -6,6 +6,15 @@ def artifactType = Attribute.of("artifactType", String)
 
 configurations {
     externalClasspath
+    jarsToRelocate {
+        attributes.attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+
+afterEvaluate {
+    dependencies.add("jarsToRelocate", project)
 }
 
 dependencies {
@@ -22,8 +31,8 @@ dependencies {
     }
 }
 
-tasks.register("resolve", Copy) {
-    def artifacts = configurations.runtimeClasspath.incoming.artifactView {
+tasks.register("relocateJars", Copy) {
+    def artifacts = configurations.jarsToRelocate.incoming.artifactView {
         attributes { attribute(artifactType, "relocated") }
     }.artifacts
     from(artifacts.artifactFiles)
