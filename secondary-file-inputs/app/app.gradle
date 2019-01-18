@@ -5,27 +5,27 @@ plugins {
 def artifactType = Attribute.of("artifactType", String)
 
 configurations {
-    additionalInputs
+    externalClasspath
 }
 
 dependencies {
     implementation(project(":lib1"))
     implementation(project(":lib2"))
-    additionalInputs("com.google.guava:guava:27.0.1-jre")
+    externalClasspath("com.google.guava:guava:27.0.1-jre")
 
-    registerTransform(FileSizer) {
+    registerTransform(ClassRelocator) {
         from.attribute(artifactType, "jar")
-        to.attribute(artifactType, "size")
+        to.attribute(artifactType, "relocated")
         configuration {
-            additionalInputs = configurations.additionalInputs
+            externalClasspath = configurations.externalClasspath
         }
     }
 }
 
 tasks.register("resolve", Copy) {
     def artifacts = configurations.runtimeClasspath.incoming.artifactView {
-        attributes { attribute(artifactType, "size") }
+        attributes { attribute(artifactType, "relocated") }
     }.artifacts
     from(artifacts.artifactFiles)
-    into(project.layout.buildDirectory.dir("sizes"))
+    into(project.layout.buildDirectory.dir("relocated"))
 }

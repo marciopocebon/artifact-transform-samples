@@ -11,3 +11,7 @@ plugins.withType<KotlinDslPlugin> {
 repositories {
     jcenter()
 }
+
+dependencies {
+    implementation("me.lucko:jar-relocator:1.3")
+}
