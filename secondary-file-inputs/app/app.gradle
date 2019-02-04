@@ -25,8 +25,8 @@ dependencies {
     registerTransform(ClassRelocator) {
         from.attribute(artifactType, "jar")
         to.attribute(artifactType, "relocated")
-        configuration {
-            externalClasspath = configurations.externalClasspath
+        parameters {
+            externalClasspath.from(configurations.externalClasspath)
         }
     }
 }

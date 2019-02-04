@@ -1,60 +1,51 @@
-
 import me.lucko.jarrelocator.JarRelocator
 import me.lucko.jarrelocator.Relocation
-import org.gradle.api.artifacts.transform.ArtifactTransformDependencies
+import org.gradle.api.artifacts.transform.ArtifactTransformAction
+import org.gradle.api.artifacts.transform.ArtifactTransformOutputs
 import org.gradle.api.artifacts.transform.PrimaryInput
+import org.gradle.api.artifacts.transform.PrimaryInputDependencies
 import org.gradle.api.artifacts.transform.TransformAction
-import org.gradle.api.artifacts.transform.Workspace
+import org.gradle.api.artifacts.transform.TransformParameters
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.CompileClasspath
-import org.gradle.api.tasks.Internal
 import java.io.File
-import java.util.concurrent.Callable
 import java.util.function.Predicate
 import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import java.util.stream.Collectors
-import javax.inject.Inject
 
 
 @TransformAction(ClassRelocatorAction::class)
 interface ClassRelocator {
     @get:CompileClasspath
-    var externalClasspath: FileCollection
+    val externalClasspath: ConfigurableFileCollection
 }
 
-abstract class ClassRelocatorAction : Callable<List<File>> {
-    @get:Inject
+abstract class ClassRelocatorAction : ArtifactTransformAction {
+    @get:TransformParameters
     abstract val parameters: ClassRelocator
 
     @get:Classpath
     @get:PrimaryInput
     abstract val primaryInput: File
 
-    @get:Workspace
-    abstract val workspace: File
-
-    @get:Internal
-    @get:Inject
-    abstract val dependencies: ArtifactTransformDependencies
-
     @get:CompileClasspath
-    val dependencyFiles
-        get() = dependencies.files
+    @get:PrimaryInputDependencies
+    abstract val dependencies: FileCollection
 
-    override fun call(): List<File> {
-        return if (parameters.externalClasspath.contains(primaryInput)) {
-            listOf(primaryInput)
+    override fun transform(outputs: ArtifactTransformOutputs) {
+        if (parameters.externalClasspath.contains(primaryInput)) {
+            outputs.registerOutputFile(primaryInput)
         } else {
-            relocateJar()
+            val baseName = primaryInput.name.substring(0, primaryInput.name.length - 4)
+            relocateJar(outputs.registerOutput("$baseName-relocated.jar"))
         }
     }
 
-    private fun relocateJar(): List<File> {
-        val baseName = primaryInput.name.substring(0, primaryInput.name.length - 4)
-        val output = workspace.resolve("${baseName}-relocated.jar")
-        val relocatedPackages = (dependencyFiles.flatMap { it.readPackages() } + primaryInput.readPackages()).toSet()
+    private fun relocateJar(output: File) {
+        val relocatedPackages = (dependencies.flatMap { it.readPackages() } + primaryInput.readPackages()).toSet()
         val nonRelocatedPackages = parameters.externalClasspath.flatMap { it.readPackages() }
         val relocations = (relocatedPackages - nonRelocatedPackages).map { packageName ->
             val toPackage = "relocated.$packageName"
@@ -62,7 +53,6 @@ abstract class ClassRelocatorAction : Callable<List<File>> {
             Relocation(packageName, toPackage)
         }
         JarRelocator(primaryInput, output, relocations).run()
-        return listOf(output)
     }
 
     private fun File.readPackages(): Set<String> {
