@@ -1,10 +1,11 @@
+
 import me.lucko.jarrelocator.JarRelocator
 import me.lucko.jarrelocator.Relocation
-import org.gradle.api.artifacts.transform.ArtifactTransformAction
-import org.gradle.api.artifacts.transform.ArtifactTransformOutputs
-import org.gradle.api.artifacts.transform.PrimaryInput
-import org.gradle.api.artifacts.transform.PrimaryInputDependencies
+import org.gradle.api.artifacts.transform.AssociatedTransformAction
+import org.gradle.api.artifacts.transform.InputArtifact
+import org.gradle.api.artifacts.transform.InputArtifactDependencies
 import org.gradle.api.artifacts.transform.TransformAction
+import org.gradle.api.artifacts.transform.TransformOutputs
 import org.gradle.api.artifacts.transform.TransformParameters
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.FileCollection
@@ -17,30 +18,30 @@ import java.util.jar.JarFile
 import java.util.stream.Collectors
 
 
-@TransformAction(ClassRelocatorAction::class)
+@AssociatedTransformAction(ClassRelocatorAction::class)
 interface ClassRelocator {
     @get:CompileClasspath
     val externalClasspath: ConfigurableFileCollection
 }
 
-abstract class ClassRelocatorAction : ArtifactTransformAction {
+abstract class ClassRelocatorAction : TransformAction {
     @get:TransformParameters
     abstract val parameters: ClassRelocator
 
     @get:Classpath
-    @get:PrimaryInput
+    @get:InputArtifact
     abstract val primaryInput: File
 
     @get:CompileClasspath
-    @get:PrimaryInputDependencies
+    @get:InputArtifactDependencies
     abstract val dependencies: FileCollection
 
-    override fun transform(outputs: ArtifactTransformOutputs) {
+    override fun transform(outputs: TransformOutputs) {
         if (parameters.externalClasspath.contains(primaryInput)) {
-            outputs.registerOutputFile(primaryInput)
+            outputs.file(primaryInput)
         } else {
             val baseName = primaryInput.name.substring(0, primaryInput.name.length - 4)
-            relocateJar(outputs.registerOutput("$baseName-relocated.jar"))
+            relocateJar(outputs.file("$baseName-relocated.jar"))
         }
     }
 
