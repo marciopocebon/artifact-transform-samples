@@ -1,7 +1,7 @@
 # Cacheable Artifact Transforms
 
 This sample shows how to declare cacheable artifact transforms.
-Short version: Add `@CacheableTransformAction` to the transform action.
+Short version: Add `@CacheableTransform` to the transform action.
 
 The implementation of the transform is in [buildSrc/src/main/kotlin/ClassRelocator.kt](buildSrc/src/main/kotlin/ClassRelocator.kt) and it is registered in [app/app.gradle.kts](app/app.gradle.kts).
 
