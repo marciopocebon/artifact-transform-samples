@@ -1,7 +1,5 @@
-
 import me.lucko.jarrelocator.JarRelocator
 import me.lucko.jarrelocator.Relocation
-import org.gradle.api.artifacts.transform.AssociatedTransformAction
 import org.gradle.api.artifacts.transform.CacheableTransform
 import org.gradle.api.artifacts.transform.InputArtifact
 import org.gradle.api.artifacts.transform.InputArtifactDependencies
@@ -19,16 +17,12 @@ import java.util.jar.JarFile
 import java.util.stream.Collectors
 
 
-@AssociatedTransformAction(ClassRelocatorAction::class)
-interface ClassRelocator {
-    @get:CompileClasspath
-    val externalClasspath: ConfigurableFileCollection
-}
-
 @CacheableTransform
-abstract class ClassRelocatorAction : TransformAction {
-    @get:TransformParameters
-    abstract val parameters: ClassRelocator
+abstract class ClassRelocator : TransformAction<ClassRelocator.Parameters> {
+    interface Parameters : TransformParameters {
+        @get:CompileClasspath
+        val externalClasspath: ConfigurableFileCollection
+    }
 
     @get:Classpath
     @get:InputArtifact
