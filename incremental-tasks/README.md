@@ -1,7 +1,7 @@
 # Detailed task input changes
 
 This sample shows how to query per-property changes for task inputs.
-The example uses a [Checksum](buildSrc/main/kotlin/Checksum.kt) task, which incrementally checksums the files on the runtime classpath and everything under the `inputs` directory.
+The example uses a [Checksum](buildSrc/src/main/kotlin/Checksum.kt) task, which incrementally checksums the files on the runtime classpath and everything under the `inputs` directory.
 
 On a first run, everything needs to be checksummed.
 
