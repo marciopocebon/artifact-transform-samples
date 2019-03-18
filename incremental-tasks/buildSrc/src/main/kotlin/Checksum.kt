@@ -35,7 +35,7 @@ abstract class Checksum : DefaultTask() {
         changes.getFileChanges(sources).forEach { change ->
             val changedFile = change.file
             if (changedFile.exists() && !changedFile.isFile) {
-                return
+                return@forEach
             }
             when (change.changeType) {
                 ChangeType.ADDED, ChangeType.MODIFIED -> outputFileForInput(changedFile).writeText(hashFileContents(changedFile))
