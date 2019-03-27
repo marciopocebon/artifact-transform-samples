@@ -3,11 +3,13 @@ import org.gradle.api.artifacts.transform.InputArtifact
 import org.gradle.api.artifacts.transform.TransformAction
 import org.gradle.api.artifacts.transform.TransformOutputs
 import org.gradle.api.artifacts.transform.TransformParameters
+import org.gradle.api.file.FileSystemLocation
+import org.gradle.api.file.FileType
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.work.ChangeType
 import org.gradle.work.InputChanges
-import java.io.File
 import javax.inject.Inject
 
 abstract class CountLoc : TransformAction<TransformParameters.None> {
@@ -17,17 +19,17 @@ abstract class CountLoc : TransformAction<TransformParameters.None> {
 
     @get:PathSensitive(PathSensitivity.RELATIVE)
     @get:InputArtifact
-    abstract val input: File
+    abstract val input: Provider<FileSystemLocation>
 
     override fun transform(outputs: TransformOutputs) {
-        val outputDir = outputs.dir("${input.name}.loc")
-        println("Running transform on ${input.name}, incremental: ${inputChanges.isIncremental}")
+        val outputDir = outputs.dir("${input.get().asFile.name}.loc")
+        println("Running transform on ${input.get().asFile.name}, incremental: ${inputChanges.isIncremental}")
         inputChanges.getFileChanges(input).forEach { change ->
             val changedFile = change.file
-            if (changedFile.exists() && !changedFile.isFile) {
+            if (change.fileType != FileType.FILE) {
                 return@forEach
             }
-            val outputLocation = outputDir.resolve("${changedFile.relativeTo(input)}.loc")
+            val outputLocation = outputDir.resolve("${change.normalizedPath}.loc")
             when (change.changeType) {
                 ChangeType.ADDED, ChangeType.MODIFIED -> {
                     println("Processing file ${changedFile.name}")

@@ -7,6 +7,8 @@ import org.gradle.api.artifacts.transform.TransformOutputs
 import org.gradle.api.artifacts.transform.TransformParameters
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.FileCollection
+import org.gradle.api.file.FileSystemLocation
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.CompileClasspath
 import java.io.File
@@ -24,30 +26,31 @@ abstract class ClassRelocator : TransformAction<ClassRelocator.Parameters> {
 
     @get:Classpath
     @get:InputArtifact
-    abstract val primaryInput: File
+    abstract val primaryInput: Provider<FileSystemLocation>
 
     @get:CompileClasspath
     @get:InputArtifactDependencies
     abstract val dependencies: FileCollection
 
     override fun transform(outputs: TransformOutputs) {
+        val primaryInputFile = primaryInput.get().asFile
         if (parameters.externalClasspath.contains(primaryInput)) {
             outputs.file(primaryInput)
         } else {
-            val baseName = primaryInput.name.substring(0, primaryInput.name.length - 4)
+            val baseName = primaryInputFile.name.substring(0, primaryInputFile.name.length - 4)
             relocateJar(outputs.file("$baseName-relocated.jar"))
         }
     }
 
     private fun relocateJar(output: File) {
-        val relocatedPackages = (dependencies.flatMap { it.readPackages() } + primaryInput.readPackages()).toSet()
+        val relocatedPackages = (dependencies.flatMap { it.readPackages() } + primaryInput.get().asFile.readPackages()).toSet()
         val nonRelocatedPackages = parameters.externalClasspath.flatMap { it.readPackages() }
         val relocations = (relocatedPackages - nonRelocatedPackages).map { packageName ->
             val toPackage = "relocated.$packageName"
             println("$packageName -> $toPackage")
             Relocation(packageName, toPackage)
         }
-        JarRelocator(primaryInput, output, relocations).run()
+        JarRelocator(primaryInput.get().asFile, output, relocations).run()
     }
 
     private fun File.readPackages(): Set<String> {
